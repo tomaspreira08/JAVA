@@ -6,7 +6,7 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 
 public class SimplePongGame extends JPanel implements ActionListener {
-    private int ballX = 300, ballY = 250, ballDiameter = 15;
+    private int ballX, ballY, ballDiameter = 15;
     private int ballXSpeed = 3, ballYSpeed = 3;
     private int leftPaddleY = 200, rightPaddleY = 200, paddleHeight = 60, paddleWidth = 10;
     private int leftScore = 0, rightScore = 0; // Variáveis de pontuação
@@ -16,6 +16,7 @@ public class SimplePongGame extends JPanel implements ActionListener {
         setBackground(Color.BLUE);
         Timer timer = new Timer(10, this);
         timer.start();
+        resetBall(1); // Começa indo para a direita
 
         // Adiciona o KeyListener para controlar as barras
         setFocusable(true);
@@ -65,31 +66,39 @@ public class SimplePongGame extends JPanel implements ActionListener {
         ballX += ballXSpeed;
         ballY += ballYSpeed;
 
-        // Verifica colisões com as bordas
-        if (ballX < 0) {
-            rightScore++; // Aumenta a pontuação do jogador da direita
-            ballXSpeed = -ballXSpeed; // Inverte a direção da bola
+        // Verifica colisões com as bordas esquerda e direita (pontuação)
+        if (ballX < 0) { // Jogador da direita marca ponto
+            rightScore++;
+            resetBall(1); // Reinicia a bola indo para a direita
+        } else if (ballX > getWidth() - ballDiameter) { // Jogador da esquerda marca ponto
+            leftScore++;
+            resetBall(-1); // Reinicia a bola indo para a esquerda
         }
-        if (ballX > getWidth() - ballDiameter) {
-            leftScore++; // Aumenta a pontuação do jogador da esquerda
-            ballXSpeed = -ballXSpeed; // Inverte a direção da bola
-        }
+
+        // Verifica colisões com as bordas superior e inferior
         if (ballY < 0 || ballY > getHeight() - ballDiameter) {
-            ballYSpeed = -ballYSpeed; // Inverte a direção se bater na parte superior ou inferior
+            ballYSpeed = -ballYSpeed; // Inverte a direção vertical
         }
 
         // Verifica colisão com as barras
         if (ballX <= paddleWidth && ballY + ballDiameter >= leftPaddleY && ballY <= leftPaddleY + paddleHeight) {
-            ballXSpeed = -ballXSpeed; // Inverte a direção
+            ballXSpeed = Math.abs(ballXSpeed); // Garante que a bola vá para a direita
         }
         if (ballX >= getWidth() - paddleWidth - ballDiameter && ballY + ballDiameter >= rightPaddleY && ballY <= rightPaddleY + paddleHeight) {
-            ballXSpeed = -ballXSpeed; // Inverte a direção
+            ballXSpeed = -Math.abs(ballXSpeed); // Garante que a bola vá para a esquerda
         }
 
         repaint(); // Atualiza a tela
     }
 
-    
+    // Método para reiniciar a bola no centro e definir a direção correta
+    private void resetBall(int direction) {
+        ballX = getWidth() / 2 - ballDiameter / 2; // Centraliza a bola no eixo X
+        ballY = getHeight() / 2 - ballDiameter / 2; // Centraliza a bola no eixo Y
+
+        ballXSpeed = 3 * direction; // Define a direção (1 = direita, -1 = esquerda)
+        ballYSpeed = 3; // Mantém a velocidade vertical padrão
+    }
 
     public static void main(String[] args) {
         JFrame frame = new JFrame("Simple Pong Game");
