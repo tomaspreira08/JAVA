@@ -6,37 +6,39 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 
 public class SimplePongGame extends JPanel implements ActionListener {
-    private int ballX, ballY, ballDiameter = 15;
-    private int ballXSpeed = 3, ballYSpeed = 3;
+    private int ballX = 300, ballY = 250, ballDiameter = 15;
+    private int ballXSpeed = 2, ballYSpeed = 2;
     private int leftPaddleY = 200, rightPaddleY = 200, paddleHeight = 60, paddleWidth = 10;
-    private int leftScore = 0, rightScore = 0; // Variáveis de pontuação
+    private int leftScore = 0, rightScore = 0;
+    private int touchCount = 0;
+
+    private boolean wPressed = false;
+    private boolean sPressed = false;
+    private boolean upPressed = false;
+    private boolean downPressed = false;
 
     public SimplePongGame() {
         setPreferredSize(new Dimension(600, 500));
         setBackground(Color.BLUE);
         Timer timer = new Timer(10, this);
         timer.start();
-        resetBall(1); // Começa indo para a direita
 
-        // Adiciona o KeyListener para controlar as barras
         setFocusable(true);
         addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-                // Movimentação da barra esquerda
-                if (e.getKeyCode() == KeyEvent.VK_W && leftPaddleY > 0) {
-                    leftPaddleY -= 10; // Move para cima
-                }
-                if (e.getKeyCode() == KeyEvent.VK_S && leftPaddleY < getHeight() - paddleHeight) {
-                    leftPaddleY += 10; // Move para baixo
-                }
-                // Movimentação da barra direita
-                if (e.getKeyCode() == KeyEvent.VK_UP && rightPaddleY > 0) {
-                    rightPaddleY -= 10; // Move para cima
-                }
-                if (e.getKeyCode() == KeyEvent.VK_DOWN && rightPaddleY < getHeight() - paddleHeight) {
-                    rightPaddleY += 10; // Move para baixo
-                }
+                if (e.getKeyCode() == KeyEvent.VK_W) wPressed = true;
+                if (e.getKeyCode() == KeyEvent.VK_S) sPressed = true;
+                if (e.getKeyCode() == KeyEvent.VK_UP) upPressed = true;
+                if (e.getKeyCode() == KeyEvent.VK_DOWN) downPressed = true;
+            }
+
+            @Override
+            public void keyReleased(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_W) wPressed = false;
+                if (e.getKeyCode() == KeyEvent.VK_S) sPressed = false;
+                if (e.getKeyCode() == KeyEvent.VK_UP) upPressed = false;
+                if (e.getKeyCode() == KeyEvent.VK_DOWN) downPressed = false;
             }
         });
     }
@@ -44,17 +46,16 @@ public class SimplePongGame extends JPanel implements ActionListener {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        Graphics2D g2d = (Graphics2D) g; // Converte Graphics para Graphics2D
+        Graphics2D g2d = (Graphics2D) g;
         g2d.setColor(Color.WHITE);
-        g2d.fillOval(ballX, ballY, ballDiameter, ballDiameter); // Desenha a bola
-        g2d.fillRect(0, leftPaddleY, paddleWidth, paddleHeight); // Desenha a barra esquerda
-        g2d.fillRect(getWidth() - paddleWidth, rightPaddleY, paddleWidth, paddleHeight); // Desenha a barra direita
+        g2d.fillOval(ballX, ballY, ballDiameter, ballDiameter);
+        g2d.fillRect(0, leftPaddleY, paddleWidth, paddleHeight);
+        g2d.fillRect(getWidth() - paddleWidth, rightPaddleY, paddleWidth, paddleHeight);
 
         // Desenha a linha da rede no meio
-        g2d.setStroke(new BasicStroke(5)); // 5 pixels de espessura
-        g2d.drawLine(getWidth() / 2, 0, getWidth() / 2, getHeight()); // Linha vertical no meio
+        g2d.setStroke(new BasicStroke(5));
+        g2d.drawLine(getWidth() / 2, 0, getWidth() / 2, getHeight());
 
-        // Desenha a pontuação
         g2d.setFont(new Font("Arial", Font.BOLD, 30));
         g2d.drawString("Left: " + leftScore, 50, 50);
         g2d.drawString("Right: " + rightScore, getWidth() - 150, 50);
@@ -62,42 +63,56 @@ public class SimplePongGame extends JPanel implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        // Atualiza a posição da bola
         ballX += ballXSpeed;
         ballY += ballYSpeed;
 
-        // Verifica colisões com as bordas esquerda e direita (pontuação)
-        if (ballX < 0) { // Jogador da direita marca ponto
+        if (ballX < 0) {
             rightScore++;
-            resetBall(1); // Reinicia a bola indo para a direita
-        } else if (ballX > getWidth() - ballDiameter) { // Jogador da esquerda marca ponto
+            resetBall(1);
+        }
+        if (ballX > getWidth() - ballDiameter) {
             leftScore++;
-            resetBall(-1); // Reinicia a bola indo para a esquerda
+            resetBall(-1);
         }
 
-        // Verifica colisões com as bordas superior e inferior
         if (ballY < 0 || ballY > getHeight() - ballDiameter) {
-            ballYSpeed = -ballYSpeed; // Inverte a direção vertical
+            ballYSpeed = -ballYSpeed;
         }
 
-        // Verifica colisão com as barras
         if (ballX <= paddleWidth && ballY + ballDiameter >= leftPaddleY && ballY <= leftPaddleY + paddleHeight) {
-            ballXSpeed = Math.abs(ballXSpeed); // Garante que a bola vá para a direita
+            ballXSpeed = -ballXSpeed;
+            touchCount++;
+            checkIncreaseSpeed();
+            ballX += 5;
         }
         if (ballX >= getWidth() - paddleWidth - ballDiameter && ballY + ballDiameter >= rightPaddleY && ballY <= rightPaddleY + paddleHeight) {
-            ballXSpeed = -Math.abs(ballXSpeed); // Garante que a bola vá para a esquerda
+            ballXSpeed = -ballXSpeed;
+            touchCount++;
+            checkIncreaseSpeed();
+            ballX -= 5;
         }
 
-        repaint(); // Atualiza a tela
+        if (wPressed && leftPaddleY > 0) leftPaddleY -= 5;
+        if (sPressed && leftPaddleY < getHeight() - paddleHeight) leftPaddleY += 5;
+        if (upPressed && rightPaddleY > 0) rightPaddleY -= 5;
+        if (downPressed && rightPaddleY < getHeight() - paddleHeight) rightPaddleY += 5;
+
+        repaint();
     }
 
-    // Método para reiniciar a bola no centro e definir a direção correta
     private void resetBall(int direction) {
-        ballX = getWidth() / 2 - ballDiameter / 2; // Centraliza a bola no eixo X
-        ballY = getHeight() / 2 - ballDiameter / 2; // Centraliza a bola no eixo Y
+        ballX = 300;
+        ballY = 250;
+        ballXSpeed = direction * 2;
+        ballYSpeed = 2;
+        touchCount = 0;
+    }
 
-        ballXSpeed = 3 * direction; // Define a direção (1 = direita, -1 = esquerda)
-        ballYSpeed = 3; // Mantém a velocidade vertical padrão
+    private void checkIncreaseSpeed() {
+        if (touchCount % 5 == 0) {
+            ballXSpeed += (ballXSpeed > 0) ? 1 : -1;
+            ballYSpeed += (ballYSpeed > 0) ? 1 : -1;
+        }
     }
 
     public static void main(String[] args) {
